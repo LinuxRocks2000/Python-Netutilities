@@ -1,3 +1,13 @@
+## A wrapper around the python low-level socket api, made by Tyler Clarke, April 5, 2020.
+## Feel free to use and distribute under the terms of any freeware license you care to mention
+
+## When using, just extend the ServerListenable class and define the handle_post and handle_get functions (each with the arguments self, data, and connection).
+## And the handle_aux function, if you want to.
+
+## The webserver can be run by creating an object of your extended class, and calling the run function on it.
+
+## Enjoy!
+
 import socket
 import json
 class ServerListenable:
