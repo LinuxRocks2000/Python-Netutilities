@@ -29,7 +29,6 @@ class ServerListenable:
                     raise Exception
             except Exception as e:
                 self.handle_aux(recieved,self.connection)
-                print(e)
             self.connection.close()
     def handle_post(self,data,connection):
         pass
