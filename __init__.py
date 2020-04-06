@@ -1,2 +1,2 @@
 from serverlistenable import ServerListenable
-from websocketlistenable import WebsocketListenable
+from websocketlistenable import WebSocketListenable as WebsocketListenable
