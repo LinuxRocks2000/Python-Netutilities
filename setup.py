@@ -10,10 +10,7 @@ setup(
   url = 'https://github.com/LinuxRocks2000/netutils/',   # Provide either the link to your github or to your website
   download_url = 'https://github.com/LinuxRocks2000/netutils/archive/v_01.tar.gz',    # I explain this later on
   keywords = ['TCP', 'server', 'website'],   # Keywords that define your package best
-  install_requires=[
-  'validators',
-          'beautifulsoup4',
-      ],
+  install_requires=["websockets","json","socket","asyncio"],
   classifiers=[
     'Development Status :: 3 - Alpha',
     'Intended Audience :: Developers',
