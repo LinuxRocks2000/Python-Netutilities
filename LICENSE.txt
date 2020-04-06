@@ -1,0 +1,26 @@
+A license
+
+Copyright (c) 2020 LinuxRocks2000
+
+Permission is hereby granted to use, copy, modify, merge, publish, distribute, sublicense
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+This is and will remain freeware, and this software shall not be used for monetary gain, so no selling it or using it inside non-freeware applications.
+Keep it FOSS, dudes.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+To be quite clear, this software doesn't come with any sort of liability, and the creator/developers are not responsible for
+any and all damages incurred in the use of this product.
+
+And for heavens sake this is FOSS freeware, so whats the point of a lawsuit?
