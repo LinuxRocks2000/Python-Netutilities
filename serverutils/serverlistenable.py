@@ -30,6 +30,8 @@ class ServerListenable:
             except Exception as e:
                 self.handle_aux(recieved,self.connection)
             self.connection.close()
+    def inittasks(self,host,port):
+        pass
     def handle_post(self,data,connection):
         pass
     def handle_get(self,data,connection):
