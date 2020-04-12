@@ -10,10 +10,12 @@
 
 import socket
 import json
+import mimetypes
 class ServerListenable:
-    def __init__(self,host,port):
+    def __init__(self,host="localhost",port=8080):
         self.sckt=socket.socket()
         self.sckt.bind((host,port))
+        self.inittasks(host,port)
     def run(self):
         self.sckt.listen(5)
         while True:
@@ -35,22 +37,54 @@ class ServerListenable:
     def handle_post(self,data,connection):
         pass
     def handle_get(self,data,connection):
-        pass
+        self.send_file_headers(connection,"text/html")
+        connection.send('''
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Web test</title>
+    </head>
+        <h1>Test page</h1>
+        <p>
+            This is the first page you see when you create an empty, minimal TCP webserver.<br>
+            To get a different page, define the <code>handle_get(self,data,connection)</code> function.<br>
+            From <code>handle_get</code>, you can use the send_file function to send a local html file.<br>
+            "connection" (third argument) is the socket object connecting to the client, see more about sockets to use this.<br>
+            "data" (second argument) is a dict with data on the request, including "reqlocation", which is the location requested by the client.<br>
+            "self" (first argument) is an ServerListenable object, see the docs.<br><br>
+            This page is incomplete, please see <a href="https://github.com/LinuxRocks2000/netutils">the github repo</a> for more information.
+        </p>
+    </body>
+</html>
+'''.encode())
+        connection.close()
     def handle_aux(self,req,connection):
         pass
+    def send_file_headers(self, connection, typ):
+        connection.send("HTTP/1.0 200 OK\n".encode())
+        bork = "Content-Type: " + typ + "\n"
+        connection.send(bork.encode())
+        connection.send("\n".encode())
+    def send_file(self,file,connection):
+        self.send_file_headers(self,connection,mimetypes.guess_type(file)[0])
+        c=open(file)
+        connection.send(c.read().encode())
+        c.close()
     def parseRequest(self,data):
+        toreturn={}
         copy=data.decode()
         copy=copy.replace("\r","")
-        copy=copy.split("\n")
-        toreturn={}
-        if copy[0][0:4]=="GET ":
-            toreturn["reqtype"]="GET"
-        if copy[0][0:4]=="POST":
-            toreturn["reqtype"]="POST"
-        toreturn["reqlocation"]=copy[0].split(" ")[1]
-        toreturn["useragent"]=copy[2].split(" ")[1]
-        toreturn["mimetype"]=(copy[3][8:]).split(",")
-        toreturn["langtype"]=(copy[4][17:]).split(",")
-        if toreturn["reqtype"]=="POST":
-            toreturn["data"]=json.loads(copy[13])
+        toreturn["rawrequesttext"]=str(copy)
+        copy=copy.split("\n\n")
+        toreturn["content"]=str(copy[1])
+        toreturn["rawheaders"]=str(copy[0])
+        cop=copy[0].split("\n")
+        for x in cop[1:]:
+            p=x.split(": ")
+            toreturn[p[0]]=p[1]
+        top=cop[0].split(" ")
+        toreturn["reqtype"]=top[0]
+        toreturn["reqlocation"]=top[1]
+        toreturn["reqhttpversion"]=top[2]
         return toreturn
