@@ -14,6 +14,7 @@ import mimetypes
 
 class ServerListenable:
     def __init__(self,host="localhost",port=8080,controls=None):
+        print("Server init called")
         self.sckt=socket.socket()
         self.sckt.bind((host,port))
         self.inittasks(host,port)
