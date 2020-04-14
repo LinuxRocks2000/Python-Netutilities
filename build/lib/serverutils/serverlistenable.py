@@ -14,7 +14,6 @@ import mimetypes
 
 class ServerListenable:
     def __init__(self,host="localhost",port=8080,controls=None):
-        print("Server init called")
         self.sckt=socket.socket()
         self.sckt.bind((host,port))
         self.inittasks(host,port)
@@ -29,12 +28,13 @@ class ServerListenable:
                 ppt=self.parseRequest(recieved)
                 if ppt["reqtype"]=="POST":
                     if ppt["reqlocation"][0:len(self.controlsdir)]==self.controlsdir and self.controls:
-                        self.controls.on_post(ppt)
+                        self.controls.on_post(ppt,self.connection)
                     else:
                         self.handle_post(ppt,self.connection)
                 elif ppt["reqtype"]=="GET":
                     if ppt["reqlocation"][0:len(self.controlsdir)]==self.controlsdir and self.controls:
-                        self.controls.on_get(ppt)
+                        self.controls.on_get(ppt,self.connection)
+                        print("On get called")
                     else:
                         self.handle_get(ppt,self.connection)
                 else:

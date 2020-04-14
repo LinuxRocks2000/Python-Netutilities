@@ -14,6 +14,20 @@ import mimetypes
 
 class ServerListenable:
     def __init__(self,host="localhost",port=8080,controls=None):
+        '''
+        ServerListenable is the main part of serverlistenable.
+        To use it, simply extend the class like "class MyServer(ServerListenable):"
+        and define the handle_get and handle_post functions.
+        Each function (handle_get and handle_post) have three arguments.
+        First is self, pretty obvious one, then data (a dict with the parsed request data),
+        then connection, a raw socket connection which can use send and close.
+        Look up python sockets.
+        For init tasks, you can also override the inittasks function, which is called with no arguments
+        (except the self, obviously)
+
+        Create an object of your class, and call the run function. No arguments.
+
+        Then talk to weird_pusheen on discord, because I know the only person to use this is you (at least at this version).'''
         self.sckt=socket.socket()
         self.sckt.bind((host,port))
         self.inittasks(host,port)
@@ -28,12 +42,13 @@ class ServerListenable:
                 ppt=self.parseRequest(recieved)
                 if ppt["reqtype"]=="POST":
                     if ppt["reqlocation"][0:len(self.controlsdir)]==self.controlsdir and self.controls:
-                        self.controls.on_post(ppt)
+                        self.controls.on_post(ppt,self.connection)
                     else:
                         self.handle_post(ppt,self.connection)
                 elif ppt["reqtype"]=="GET":
                     if ppt["reqlocation"][0:len(self.controlsdir)]==self.controlsdir and self.controls:
-                        self.controls.on_get(ppt)
+                        self.controls.on_get(ppt,self.connection)
+                        print("On get called")
                     else:
                         self.handle_get(ppt,self.connection)
                 else:

@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'serverutils',
   packages = ['serverutils'],
-  version = '1.8',
+  version = '2.0',
   description = 'A python library for webserver development with a simple API',
   author = 'Noman',                   # Type in your name
   author_email = 'plupy44@gmail.com',      # Type in your E-Mail
