@@ -13,7 +13,7 @@ import json
 import mimetypes
 
 class ServerListenable:
-    def __init__(self,host="localhost",port=8080,controls=None):
+    def __init__(self,host="localhost",port=8080):
         '''
         ServerListenable is the main part of serverlistenable.
         To use it, simply extend the class like "class MyServer(ServerListenable):"
