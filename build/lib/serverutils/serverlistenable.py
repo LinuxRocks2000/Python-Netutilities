@@ -1,6 +1,3 @@
-import socket
-import json
-import mimetypes
 from .socketutils import ServerSocket
 
 class Hook:
@@ -38,13 +35,14 @@ class Hook:
 
 
 class TCPServer:
-    def __init__(self,host,port,blocking=True):
+    def __init__(self,host,port,blocking=True,*args,**kwargs):
         self.server=ServerSocket(host,port,blocking=blocking)
         self.blocking=blocking
         self.host=host
         self.port=port
-        self.extensions=[]
-        self.protocols=[]
+        self.extensions={}
+        self.functable={}
+        self.protocols={}
         self.hooks={}
         init=self.addHook('init')
         init.addFunction(self.listen)
@@ -53,6 +51,7 @@ class TCPServer:
         main.addFunction(self.tasks)
         handle=self.addHook("handle")
         handle.addFunction(self.handle)
+        self.inittasks(*args,**kwargs)
     def inittasks(self):
         pass
     def listen(self,lst=5):
@@ -60,16 +59,12 @@ class TCPServer:
     def tasks(self):
         pass
     def addExtension(self,extensionobject):
-        self.extensions.append(extensionobject)
-        extensionobject.extend(self)
+        self.protocols[extensionobject.addToServer(self)]=extensionobject
     def addProtocol(self,protocolObject):
-        self.protocols.append(protocolObject)
-        protocolObject.addToServer(self)
+        self.protocols[protocolObject.addToServer(self)]=protocolObject
     def run(self):
         connection=self.server.get_connection()
-        data=connection.recieveall()
-        print("Data in TCPServer run (line 68):")
-        print(data)
+        data=connection.recvall()
         if connection: self.getHook("handle").call(connection,data)
     def getHook(self,hook):
         return self.hooks[hook]

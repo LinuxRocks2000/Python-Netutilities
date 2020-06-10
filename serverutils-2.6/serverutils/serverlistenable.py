@@ -40,8 +40,9 @@ class TCPServer:
         self.blocking=blocking
         self.host=host
         self.port=port
-        self.extensions=[]
-        self.protocols=[]
+        self.extensions={}
+        self.functable={}
+        self.protocols={}
         self.hooks={}
         init=self.addHook('init')
         init.addFunction(self.listen)
@@ -58,11 +59,9 @@ class TCPServer:
     def tasks(self):
         pass
     def addExtension(self,extensionobject):
-        self.extensions.append(extensionobject)
-        extensionobject.extend(self)
+        self.protocols[extensionobject.addToServer(self)]=extensionobject
     def addProtocol(self,protocolObject):
-        self.protocols.append(protocolObject)
-        protocolObject.addToServer(self)
+        self.protocols[protocolObject.addToServer(self)]=protocolObject
     def run(self):
         connection=self.server.get_connection()
         data=connection.recvall()

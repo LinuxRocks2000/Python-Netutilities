@@ -1,8 +1,8 @@
 from distutils.core import setup
 setup(
   name = 'serverutils',
-  packages = ['serverutils',"clientutils"],
-  version = '2.6',
+  packages = ['serverutils'],
+  version = '3.0', ## Major overhaul. 2.6>3.0 makes sense, really.
   description = 'A python library for webserver development with a simple API',
   author = 'Noman',
   author_email = 'plupy44@gmail.com',

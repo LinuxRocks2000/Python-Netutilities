@@ -2,6 +2,8 @@ import os
 class HFE: ## HttpFailEvents
     FILENOTFOUND=0
     STRANGEERROR=1
+    PERMISSIONDENIED=2
+    CLASSIFIED=3 ## The file is found, but classified.
 
 class Protocol:
     def __init__(self,*args,**kwargs):
@@ -14,9 +16,9 @@ class Protocol:
     def addToServer(self,server):
         server.getHook("handle").addTopFunction(self.handle)
         self.server=server
-        self.uponAddToServer(server)
+        return self.uponAddToServer(server)
     def uponAddToServer(self,server):
-        pass
+        return "NAMELESS"
 
 
 class Protocol_HTTP(Protocol):
@@ -37,6 +39,7 @@ If necessary, '''
         self.server=server
         p=server.addHook("http_handle")
         p.addFunction(self.http_handle)
+        return "HTTP" ## Return the dict name
     def handleget(self,connection,request):
         h=HTTPOutgoing(request)
         h.setStatus(200)
