@@ -1,0 +1,12 @@
+Metadata-Version: 1.1
+Name: serverutils
+Version: 2.6
+Summary: A python library for webserver development with a simple API
+Home-page: https://github.com/LinuxRocks2000/netutils
+Author: Noman
+Author-email: plupy44@gmail.com
+License: UNKNOWN
+Download-URL: https://github.com/LinuxRocks2000/netutils/archive/v_01.tar.gz
+Description: UNKNOWN
+Keywords: socket,websockets,tcp,web,server
+Platform: UNKNOWN
