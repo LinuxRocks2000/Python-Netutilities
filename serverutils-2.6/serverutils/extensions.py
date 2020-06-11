@@ -2,7 +2,6 @@ import json
 import os
 from .protocols import HFE
 
-
 ## Classes for Extensions. Such as, the JSONIndexedSecurity.
 class Extension:
     '''Base class for all extensions. Override inittasks and uponAddToServer. Remember,
@@ -17,6 +16,7 @@ uponAddToServer MUST return the name of the extension, for later use obviously.'
         return self.uponAddToServer(*args,**kwargs)
     def uponAddToServer(self):
         pass
+
 
 class VeryBasicSecurity(Extension):
     '''Incredibly simple security measures for servers. Blocks GET and POST requests
@@ -63,3 +63,47 @@ config file, and the default permission level. See source for more.'''
             print("Using public perms")
             perms=self.data["public"][url]
         return perms
+
+
+class JustASimpleWebserverExtension(Extension):
+    def inittasks(self,sitedir=".",index="index.html"):
+        self.sitedir=sitedir
+        self.index=index
+    def uponAddToServer(self):
+        self.server.getHook("http_handleGET").addTopFunction(self.topGET,0) ## Not to make it a habit, but priority number 0 is kind of necessary for webserver extensions.
+##        self.server.getHook("http_handlePOST").addTopFunction(self.topPOST,0)
+        self.server.getHook("http_handle").addTopFunction(self.filter_reqloc)
+    def topGET(self,incoming,outgoing): ## Copycatted from server.py/SimpleHTTPServer
+        baselocale=os.path.basename(incoming.location)
+        locale=incoming.location
+        if baselocale=="":
+            if os.path.isfile(locale+self.index):
+                outgoing.setStatus(200)
+                outgoing.setFile(locale+self.index)
+                outgoing.send()
+            else:
+                self.server.getHook("httpfailure").call(incoming,outgoing,HFE.FILENOTFOUND) ## Build utilities should intercept this.
+        else:
+            if os.path.isfile(locale):
+                outgoing.setStatus(200)
+                outgoing.setFile(locale)
+                outgoing.send()
+            elif os.path.isdir(locale) and os.path.exists(locale+"/"+self.index):
+                outgoing.setStatus(200)
+                outgoing.setFile(locale+"/"+self.index)
+                outgoing.send()
+            elif os.path.isfile(locale+".html"):
+                outgoing.setStatus(200)
+                outgoing.setFile(locale+".html")
+                outgoing.send()
+            else:
+                self.server.getHook("httpfailure").call(incoming,outgoing,HFE.FILENOTFOUND)
+    def filter_reqloc(self,incoming,outgoing):
+        '''Sterilize the location of the request. Do not touch unless you know what your doing.'''
+        realpos=incoming.location
+        if realpos[0]=="/":
+            realpos=realpos[1:]
+        realpos=self.sitedir+realpos
+        realpos=realpos.replace("/../","/") ## Make sure unsavory characters can't hack you out by sending get requests with ../ as the location
+        incoming.location=os.path.abspath(realpos+("index.html" if incoming.location[-1]=="/" else "")) ## All later tasks will also use this new safe version. Turns urls like "../../../important.fileextension to ./important.fileextension, obviously not as damaging unless you made an important document public.
+        return True ## Don't ever forget return in a top function.

@@ -80,3 +80,9 @@ class TCPServer:
         self.getHook("init").call(*args,**kwargs)
         while 1:
             self.getHook("mainloop").call() ## Mainloop functions must not have args
+    def addFuncToTable(self,name,function):
+        self.functable[name]=function
+    def callFuncFromTable(self,name,*args,**kwargs):
+        self.functable[name](*args,**kwargs)
+    def delFuncFromTable(self,name):
+        del self.functable[name]
