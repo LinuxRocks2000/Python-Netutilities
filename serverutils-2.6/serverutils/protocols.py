@@ -143,7 +143,6 @@ class HTTPOutgoing: ## Write counterpart of HTTPIncoming.
     def setPreserveConnection(self,new):
         self.preserve=new
     def send(self):
-        print("Sent!")
         data=(self.version+" "+str(self.status)+" "+HTTPDATA.statuspairs[self.status]+"\r\n").encode()
         for x,y in self.headers.items():
             data+=(x+": "+y+"\r\n").encode()
@@ -155,8 +154,6 @@ class HTTPOutgoing: ## Write counterpart of HTTPIncoming.
             elif self.content:
                 self.connection.sendtext(self.content)
             if not self.preserve:
-                print("Closed connection.")
                 self.connection.close()
         except Exception as e:
-            print("Whoops, poops.",self.filename,self.incoming.location,e)
             self.incoming.http.server.getHook("httpfailure").call(self.incoming,self,HFE.STRANGEERROR)

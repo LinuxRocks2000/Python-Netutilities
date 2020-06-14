@@ -5,15 +5,19 @@ class Hook:
         self.name=name
         self.controller=controller or self._call
         self.functions=[]
+        self.default=None
         self.topfunctions=[] ## Top functions override all the others. These are sorted by priority, and must return "True" or "False" (determining whether or not to continue)
     def _call(self,*args,**kwargs):
-        continu=True
-        for x in self.topfunctions:
+        if len(self.functions)+len(self.topfunctions)>0: ## Allow for a "default function" which will only run if nothing else is available. So far, no one has used new controller functions!
+            continu=True
+            for x in self.topfunctions:
+                if continu:
+                    continu=x(*args,**kwargs)
             if continu:
-                continu=x(*args,**kwargs)
-        if continu:
-            for x in self.functions:
-                x(*args,**kwargs)
+                for x in self.functions:
+                    x(*args,**kwargs)
+        elif self.default:
+            self.default(*args,**kwargs)
     def call(self,*args,**kwargs):
         self.controller(*args,**kwargs)
     def addFunction(self,function):
@@ -28,6 +32,8 @@ class Hook:
         self.topfunctions.remove(function)
     def delFunction(self,function):
         self.functions.remove(function)
+    def setDefaultFunction(self,function):
+        self.default=function
     def doesAnything(self):
         if len(self.topfunctions)+len(self.functions)>0:
             return True
@@ -52,7 +58,7 @@ class TCPServer:
         handle=self.addHook("handle")
         handle.addFunction(self.handle)
         self.inittasks(*args,**kwargs)
-    def inittasks(self):
+    def inittasks(self,*args,**kwargs):
         pass
     def listen(self,lst=5):
         self.server.listen(lst)
@@ -80,3 +86,9 @@ class TCPServer:
         self.getHook("init").call(*args,**kwargs)
         while 1:
             self.getHook("mainloop").call() ## Mainloop functions must not have args
+    def addFuncToTable(self,name,function):
+        self.functable[name]=function
+    def callFuncFromTable(self,name,*args,**kwargs):
+        self.functable[name](*args,**kwargs)
+    def delFuncFromTable(self,name):
+        del self.functable[name]
