@@ -1,7 +1,7 @@
 import json
 import os
 import sys
-from .protocols import HFE
+from .protocols import HFE, HTTPDATA
 import importlib
 
 ## Classes for Extensions. Such as, the JSONIndexedSecurity.
@@ -130,12 +130,10 @@ class PyHP(Extension):
                 locale=incoming.location+self.index
             if locale:
                 i=importlib.import_module(os.path.relpath(locale).replace("/","."))
-                if incoming.type=="GET" and hasattr(i,"handle_get"):
-                    data,status=i.handle_get(incoming) ## The PyHP file should return HTML and HTTP status
-                    outgoing.setStatus(status)
-                    outgoing.setContent(data)
-                elif incoming.type=="POST" and hasattr(i,"handle_post"):
-                    status=i.handle_post(incoming) ## For POST, PyHP should return the HTTP status code
-                    outgoing.setStatus(status)
+                for x in HTTPDATA.methods:
+                    if hasattr(i,"handle_"+x.lower()):
+                        data,status=i.__getattribute__("handle_"+x.lower())(incoming)
+                        outgoing.setStatus(status)
+                        outgoing.setContent(data)
         except Exception as e:
             print(e)
