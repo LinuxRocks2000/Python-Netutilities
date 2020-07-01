@@ -6,9 +6,10 @@ class Hook:
         self.controller=controller or self._call
         self.functions=[]
         self.default=None
+        self.eventual=None
         self.topfunctions=[] ## Top functions override all the others. These are sorted by priority, and must return "True" or "False" (determining whether or not to continue)
     def _call(self,*args,**kwargs):
-        if len(self.functions)+len(self.topfunctions)>0: ## Allow for a "default function" which will only run if nothing else is available. So far, no one has used new controller functions!
+        if self.doesAnything(): ## Allow for a "default function" which will only run if nothing else is available. So far, no one has used new controller functions!
             continu=True
             for x in self.topfunctions:
                 if continu:
@@ -18,6 +19,8 @@ class Hook:
                     x(*args,**kwargs)
         elif self.default:
             self.default(*args,**kwargs)
+        if self.eventual:
+            self.eventual(*args,**kwargs)
     def call(self,*args,**kwargs):
         self.controller(*args,**kwargs)
     def addFunction(self,function):
@@ -34,6 +37,8 @@ class Hook:
         self.functions.remove(function)
     def setDefaultFunction(self,function):
         self.default=function
+    def setEventualFunction(self,function):
+        self.eventual=function
     def doesAnything(self):
         if len(self.topfunctions)+len(self.functions)>0:
             return True

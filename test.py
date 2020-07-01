@@ -1,8 +1,8 @@
 from serverutils import SimpleHTTPServer ## Get the not-yet-bled edge before release
-from serverutils import VeryBasicSecurity
+from serverutils import HTTPProtocolSwitcher
 class MyServer(SimpleHTTPServer):
-    def handlepost(self,incoming,outgoing):
-        print("A post request slipped through the bounds.")
+    def handle_websocket_connect(self,thing):
+        
 
 s=MyServer("",8080,sitedir="test")
 s.addExtension(VeryBasicSecurity(configfile="test/config.json",default=2)) ## Low security server. Anyone can access anything (until I add a usermanager).

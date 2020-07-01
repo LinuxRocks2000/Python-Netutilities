@@ -24,7 +24,7 @@ use except maybe creating your own HTTP based servers.'''
         print([x.__name__ for x in self.getHook("init").functions])
     def initialify(self):
         print("Adding the send hook")
-        self.getHook("http_handle").addFunction(self.send)
+        self.getHook("http_handle").setEventualFunction(self.send)
     def send(self,incoming,outgoing):
         print("Sent!")
         outgoing.send() ## Assume that status and other information have already been set.

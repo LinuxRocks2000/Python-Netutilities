@@ -1,4 +1,5 @@
 import os
+from .socketutils import ServerSocket
 class HFE: ## HttpFailEvents
     FILENOTFOUND=0
     STRANGEERROR=1
@@ -157,3 +158,16 @@ class HTTPOutgoing: ## Write counterpart of HTTPIncoming.
                 self.connection.close()
         except Exception as e:
             self.incoming.http.server.getHook("httpfailure").call(self.incoming,self,HFE.STRANGEERROR)
+
+
+class Protocol_WebSockets(Protocol):
+    def uponAddToServer(self,server):
+        server.getHook("http_handle").addTopFunction(self.httphandle)
+        hook=server.addHook("websocket_connect")
+        if hasattr(server,"handle_websocket_connect"):
+            hook.addFunction(server.handle_websocket_connect)
+        return "websockets"
+    def httphandle(self,incoming,outgoing):
+        print(incoming.headers)
+        if "Connection" in incoming.headers and incoming.headers["Connection"]=="upgrade" and incoming.headers["Upgrade"]=="websocket":
+            server.getHook("websocket_connect").call(incoming.socket)

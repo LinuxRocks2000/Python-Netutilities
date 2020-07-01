@@ -1,24 +1,10 @@
 import os
+from .main import Protocol
 class HFE: ## HttpFailEvents
     FILENOTFOUND=0
     STRANGEERROR=1
     PERMISSIONDENIED=2
     CLASSIFIED=3 ## The file is found, but classified.
-
-class Protocol:
-    def __init__(self,*args,**kwargs):
-        self.server=None
-        self.inittasks(*args,**kwargs)
-    def inittasks(self,*args,**kwargs):
-        pass
-    def handle(self,*args,**kwargs):
-        return True
-    def addToServer(self,server):
-        server.getHook("handle").addTopFunction(self.handle)
-        self.server=server
-        return self.uponAddToServer(server)
-    def uponAddToServer(self,server):
-        return "NAMELESS"
 
 
 class Protocol_HTTP(Protocol):
@@ -80,7 +66,7 @@ If necessary, '''
 
 class HTTPDATA: ## Static constants for HTTP stuff.
     methods=["GET","POST","HEAD","PUT","DELETE","CONNECT","OPTIONS","TRACE","PATCH"]
-    statuspairs={404:"Not Found",400:"Bad Request",500:"Internal Server Error",200:"OK"}
+    statuspairs={404:"Not Found",400:"Bad Request",500:"Internal Server Error",200:"OK",101:"Switching Protocols"}
 
 
 class HTTPIncoming: ## A "reader" for http requests.
@@ -142,6 +128,7 @@ class HTTPOutgoing: ## Write counterpart of HTTPIncoming.
         self.status=int(newstatus)
     def setPreserveConnection(self,new):
         self.preserve=new
+        print("Preserving connection.")
     def send(self):
         data=(self.version+" "+str(self.status)+" "+HTTPDATA.statuspairs[self.status]+"\r\n").encode()
         for x,y in self.headers.items():
@@ -157,3 +144,4 @@ class HTTPOutgoing: ## Write counterpart of HTTPIncoming.
                 self.connection.close()
         except Exception as e:
             self.incoming.http.server.getHook("httpfailure").call(self.incoming,self,HFE.STRANGEERROR)
+

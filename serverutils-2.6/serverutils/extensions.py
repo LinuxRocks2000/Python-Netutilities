@@ -3,6 +3,7 @@ import os
 import sys
 from .protocols import HFE, HTTPDATA
 import importlib
+import gzip
 
 ## Classes for Extensions. Such as, the JSONIndexedSecurity.
 class Extension:
@@ -68,6 +69,7 @@ config file, and the default permission level. See source for more.'''
 
 
 class JustASimpleWebServerExtension(Extension):
+    '''An extension for a simple web server.'''
     def inittasks(self,sitedir=".",index="index.html"):
         self.sitedir=sitedir if sitedir[-1]=="/" else sitedir+"/" ## Sterilizer uses this, not me.
         self.index=index
@@ -105,13 +107,13 @@ class JustASimpleWebServerExtension(Extension):
     def filter_reqloc(self,incoming,outgoing):
         '''Sterilize the location of the request. Do not touch unless you know what your doing.'''
         realpos=incoming.location
+        realpos=realpos.replace("/../","/") ## Make sure unsavory characters can't hack you out by sending get requests with ../ as the location
         if realpos[0]=="/":
             realpos=realpos[1:]
         realpos=self.sitedir+realpos
-        realpos=realpos.replace("/../","/") ## Make sure unsavory characters can't hack you out by sending get requests with ../ as the location
         incoming.location=realpos
-        print("Filtered the request location")
         return True ## Don't ever forget return in a top function.
+
 
 class PyHP(Extension):
     def uponAddToServer(self,index="index"):
@@ -137,3 +139,71 @@ class PyHP(Extension):
                         outgoing.setContent(data)
         except Exception as e:
             print(e)
+
+
+class HTTPProtocolSwitcher(Extension):
+    def uponAddToServer(self,server):
+        server.getHook("http_handle").addTopFunction(self.handle)
+        self.switchhook=server.addHook("protocolswitcher_switch")
+    def handle(self,incoming,outgoing):
+        if incoming.type=="GET" and incoming.headers["Connection"]=="upgrade":
+            self.switchhook.call(incoming.headers["Upgrade"],incoming,outgoing)
+            outgoing.setStatus(101)
+            outgoing.addHeader("Upgrade",incoming.headers["Upgrade"])
+            outgoing.addHeader("Connection","upgrade")
+            return False
+        return True
+
+
+class SimpleGzipper(Extension):
+    '''Simple GZIP-encoding extension for sending large
+files. Stores the gzipped files in a cache.'''
+    def uponAddToServer(self,server,cachelocale=".serverutils-gzipper-cache/"):
+        self.cachelocale=cachelocale
+        if not os.path.exists(cachelocale):
+            os.mkdir(cachelocale)
+        if not os.path.exists(cachelocale+"md5caches"):
+            p=open(cachelocale+"md5caches","w+")
+            p.close()
+        server.getHook("http_handleGET").addFunction(self.handle)
+        return "SimpleGzipper"
+    def isCacheInvalid(self,filename):
+        data=self.openCache()
+        crmtime=os.path.getmtime(filename)
+        if (not filename in data) or (crmtime!=data[filename]):
+            return True
+        return False
+    def validateCache(self,filename):
+        d=self.openCache()
+        d[filename]=str(os.path.getmtime(filename))
+        self.writeCache(d)
+    def writeCache(self,ncache):
+        file=open(self.cachelocale+"md5caches","w")
+        data=""
+        for x,y in ncache.items():
+            data+=x+" : "+y+"\n"
+        file.write(data)
+        file.close()
+    def openCache(self):
+        file=open(self.cachelocale+"md5caches")
+        data=file.read()
+        file.close()
+        d=data.split("\n")[:-1] ## Use all but the last, unfilled, line.
+        returner={}
+        for x in d:
+            ps=x.split(" = ")
+            returner[ps[0]]=float(ps[1])
+        return returner
+    def handle(self,incoming,outgoing):
+        if os.path.exists(incoming.location):
+            if self.isCacheInvalid(incoming.location):
+                self.validateCache(incoming.location)
+                file=open(incoming.location)
+                data=file.read() ## SimpleGzipper is NOT MEMORY SAFE. But none of this is.
+                file.close()
+                gzipped=gzip.GzipFile(self.cachelocale+incoming.location+".gz","wb+")
+                output.write(data)
+                output.close()
+            outgoing.setFile(self.cachelocale+incoming.location+".gz")
+        else:
+            server.getHook("httpfailure").call(incoming,outgoing,HFE.FILENOTFOUND)
