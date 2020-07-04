@@ -1,4 +1,4 @@
-##from .. import Protocol, HTTPProtocolSwitcher
+from .. import Protocol##, HTTPProtocolSwitcher
 
 
 class utils:
@@ -9,28 +9,21 @@ class utils:
     def getCharacter(bits):
         character=chr(utils.getInteger(bits))
         return character
-    def convertToBits(data):
-        totalbits=[]
-        for character in data:
-            curbits=bin(ord(character))[2:].rjust(8,'0')
-            for x in curbits:
-                totalbits.append(int(x))
-        return totalbits
 
 
 class Bits:
     def __init__(self,data=None,bits=None):
         self.bitsdata=[]
         if type(data)==str:
-            self.bitsdata=utils.convertToBits(data)
+            self.bitsdata=self.convertToBits(data)
         if type(data)==int:
-            self.bitsdata=utils.convertToBits(chr(data))
+            self.bitsdata=self.convertToBits(chr(data))
         if type(data)==list:
             for x in data:
                 if type(x)==str:
-                    self.bitsdata=self.bitsdata+utils.convertToBits(x)
+                    self.bitsdata=self.bitsdata+self.convertToBits(x)
                 if type(x)==int:
-                    self.bitsdata=self.bitsdata+utils.convertToBits(chr(x))
+                    self.bitsdata=self.bitsdata+self.convertToBits(chr(x))
         if bits: ## Bits should be a predefined list of bits
             self.bitsdata=bits
         self.position=0
@@ -77,6 +70,13 @@ class Bits:
     def getAllCharacters(self,numbits):
         df=self.getAllIntegers(numbits)
         return [chr(x) for x in df]
+    def convertToBits(self,data):
+        totalbits=[]
+        for character in data:
+            curbits=bin(ord(character))[2:].rjust(8,'0')
+            for x in curbits:
+                totalbits.append(int(x))
+        return totalbits
 
 
 class WebSocketMessage:
@@ -121,3 +121,5 @@ class WebSocketIncoming:
 ##    def tophandle(self,incoming,outgoing):
 ##        outgoing.setPreserveConnection(True) ## Preserve the connection for future interaction.
 ##        
+class Protocol_WebSockets(Protocol):
+    pass

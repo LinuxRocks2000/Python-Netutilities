@@ -19,9 +19,7 @@ use except maybe creating your own HTTP based servers.'''
                 self.getHook("http_handle"+x).addTopFunction(self.__getattribute__("top"+x))
         if hasattr(self,"topHTTPFailure"):
             self.getHook("httpfailure").addTopFunction(self.topHTTPFailure)
-        print(self.hooks)
         self.getHook("init").addFunction(self.initialify)
-        print([x.__name__ for x in self.getHook("init").functions])
     def initialify(self):
         print("Adding the send hook")
         self.getHook("http_handle").setEventualFunction(self.send)

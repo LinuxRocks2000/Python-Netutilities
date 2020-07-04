@@ -5,7 +5,7 @@ from .protocols import HFE, HTTPDATA
 import importlib
 import gzip
 
-## Classes for Extensions. Such as, the JSONIndexedSecurity.
+
 class Extension:
     '''Base class for all extensions. Override inittasks and uponAddToServer. Remember,
 uponAddToServer MUST return the name of the extension, for later use obviously.'''
@@ -75,7 +75,7 @@ class JustASimpleWebServerExtension(Extension):
         self.index=index
     def uponAddToServer(self):
         self.server.getHook("http_handleGET").addTopFunction(self.topGET,0) ## Not to make it a habit, but priority number 0 is kind of necessary for webserver extensions.
-        self.server.getHook("http_handle").addTopFunction(self.filter_reqloc)
+        self.server.getHook("http_handle").addTopFunction(self.filter_reqloc,0)
         self.server.getHook("httpfailure").setDefaultFunction(self.fail)
         return "jaswse"
     def fail(self,incoming,outgoing,event):
@@ -103,7 +103,9 @@ class JustASimpleWebServerExtension(Extension):
                 outgoing.setFile(locale+".html")
             else:
                 self.server.getHook("httpfailure").call(incoming,outgoing,HFE.FILENOTFOUND)
-        
+                return False ## Don't continue if the HTTP failed
+        print("Made it out of the TopGet function in JaSWSE")
+        return True
     def filter_reqloc(self,incoming,outgoing):
         '''Sterilize the location of the request. Do not touch unless you know what your doing.'''
         realpos=incoming.location
@@ -112,6 +114,7 @@ class JustASimpleWebServerExtension(Extension):
             realpos=realpos[1:]
         realpos=self.sitedir+realpos
         incoming.location=realpos
+        print("Successfully filtered the request location in JaSWSE")
         return True ## Don't ever forget return in a top function.
 
 
@@ -158,14 +161,14 @@ class HTTPProtocolSwitcher(Extension):
 class SimpleGzipper(Extension):
     '''Simple GZIP-encoding extension for sending large
 files. Stores the gzipped files in a cache.'''
-    def uponAddToServer(self,server,cachelocale=".serverutils-gzipper-cache/"):
+    def uponAddToServer(self,cachelocale=".serverutils-gzipper-cache/"):
         self.cachelocale=cachelocale
         if not os.path.exists(cachelocale):
             os.mkdir(cachelocale)
         if not os.path.exists(cachelocale+"md5caches"):
             p=open(cachelocale+"md5caches","w+")
             p.close()
-        server.getHook("http_handleGET").addFunction(self.handle)
+        self.server.getHook("http_handleGET").addFunction(self.handle)
         return "SimpleGzipper"
     def isCacheInvalid(self,filename):
         data=self.openCache()
@@ -195,15 +198,21 @@ files. Stores the gzipped files in a cache.'''
             returner[ps[0]]=float(ps[1])
         return returner
     def handle(self,incoming,outgoing):
-        if os.path.exists(incoming.location):
+        ## Only do any of this if outgoing has a file send
+        print("Beep")
+        if outgoing.filename and os.path.exists(incoming.location) and "gzip" in incoming.headers["Accept-Encoding"]:
+            print(incoming.location)
             if self.isCacheInvalid(incoming.location):
                 self.validateCache(incoming.location)
                 file=open(incoming.location)
                 data=file.read() ## SimpleGzipper is NOT MEMORY SAFE. But none of this is.
                 file.close()
-                gzipped=gzip.GzipFile(self.cachelocale+incoming.location+".gz","wb+")
+                gzipped=gzip.GzipFile('"'+self.cachelocale+incoming.location+'.gz"',"wb+")
                 output.write(data)
                 output.close()
-            outgoing.setFile(self.cachelocale+incoming.location+".gz")
+            outgoing.setFile('"'+self.cachelocale+incoming.location+'.gz"')
+            outgoing.addHeader("Content-Encoding","gzip")
         else:
             server.getHook("httpfailure").call(incoming,outgoing,HFE.FILENOTFOUND)
+        print("Made it past the get request intercepter for SimpleGzipper")
+        return True

@@ -1,5 +1,19 @@
 from .socketutils import ServerSocket
 
+
+pork=print
+printtabs=""
+def addprinttabs(n):
+    global printtabs
+    printtabs+=n*"  "
+def removeprinttabs(n):
+    global printtabs
+    printtabs=printtabs[n*2:]
+def print(*args,**kwargs):
+    global printtabs
+    dawrgs=list(args)
+    dawrgs[0]=printtabs+dawrgs[0]
+    pork(*dawrgs,**kwargs)
 class Hook:
     def __init__(self,name,controller=None):
         self.name=name
@@ -9,18 +23,33 @@ class Hook:
         self.eventual=None
         self.topfunctions=[] ## Top functions override all the others. These are sorted by priority, and must return "True" or "False" (determining whether or not to continue)
     def _call(self,*args,**kwargs):
+        print("Beginning hook name = "+self.name)
+        addprinttabs(1)
         if self.doesAnything(): ## Allow for a "default function" which will only run if nothing else is available. So far, no one has used new controller functions!
             continu=True
             for x in self.topfunctions:
                 if continu:
+                    print("Doing a top function, hook name = "+self.name+", function name = "+x.__name__)
                     continu=x(*args,**kwargs)
+                    print("Did the top function, hook name = "+self.name+", continu = "+str(continu))
+            print("Finished doing the top functions for "+self.name)
             if continu:
                 for x in self.functions:
+                    print("Doing a function, hook name = "+self.name+", function name = "+x.__name__)
                     x(*args,**kwargs)
+                    print("Did the function, hook name = "+self.name)
+                print('Finished doing the normal functions for '+self.name)
         elif self.default:
+            print("Doing the default function, hook name = "+self.name)
             self.default(*args,**kwargs)
+            print("Did the default function, hook name = "+self.name)
+        print("Eventual in "+self.name+":",self.eventual)
         if self.eventual:
+            print("Doing the eventual function, hook name = "+self.name)
             self.eventual(*args,**kwargs)
+            print("Did the eventual function, hook name = "+self.name)
+        removeprinttabs(1)
+        print("Ended hook name = "+self.name)
     def call(self,*args,**kwargs):
         self.controller(*args,**kwargs)
     def addFunction(self,function):
@@ -39,6 +68,7 @@ class Hook:
         self.default=function
     def setEventualFunction(self,function):
         self.eventual=function
+        print("Set the eventual function")
     def doesAnything(self):
         if len(self.topfunctions)+len(self.functions)>0:
             return True

@@ -8,8 +8,7 @@ class HFE: ## HttpFailEvents
 
 
 class Protocol_HTTP(Protocol):
-    '''The HTTP Protocol base class. Never interact directly with the http protocol object.
-If necessary, '''
+    '''The HTTP protocol'''
     def inittasks(self):
         self.requests=[]
     def uponAddToServer(self,server): ## The "attachment" function, to add a built protocol to a server.
@@ -26,8 +25,7 @@ If necessary, '''
         p=server.addHook("http_handle")
         p.addFunction(self.http_handle)
         return "HTTP" ## Return the dict name
-    def handleget(self,connection,request):
-        h=HTTPOutgoing(request)
+    def handleget(self,incoming,h):
         h.setStatus(200)
         h.setContent('''<!DOCTYPE html>
 <html>
@@ -40,7 +38,6 @@ If necessary, '''
 <p>If your seeing this, it means you haven't even wrapped the raw Protocol_HTTP. This is a development only page.</p>
 </body>
 </html>''')
-        h.send()
     def http_handle(self,incoming,outgoing):
         self.server.getHook("http_handle"+incoming.type).call(incoming,outgoing)
     def handle(self,connection,data):
@@ -48,13 +45,15 @@ If necessary, '''
         try:
             req=HTTPIncoming(connection,data,self)
         except Exception as e:
+            print("Criminal Caught: line 47 :",e)
             return True
         if req.isHTTP:
             try:
                 s=self.server.getHook("http_handle")
                 s.call(req,req.getOutgoing())
                 return False
-            except: ## User parse failed. This is mainly for further implementation.
+            except Exception as e: ## User parse failed. This is mainly for further implementation.
+                raise e
                 self.server.getHook("httpfailure").call(req,req.getOutgoing(),HFE.STRANGEERROR)
                 return True
         return True
