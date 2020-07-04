@@ -21,10 +21,8 @@ use except maybe creating your own HTTP based servers.'''
             self.getHook("httpfailure").addTopFunction(self.topHTTPFailure)
         self.getHook("init").addFunction(self.initialify)
     def initialify(self):
-        print("Adding the send hook")
-        self.getHook("http_handle").setEventualFunction(self.send)
+        self.getHook("http_handle").addEventualFunction(self.send)
     def send(self,incoming,outgoing):
-        print("Sent!")
         outgoing.send() ## Assume that status and other information have already been set.
 
 

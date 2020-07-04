@@ -4,7 +4,6 @@ setup.cfg
 setup.py
 serverutils/__init__.py
 serverutils/extensions.py
-serverutils/protocols.py
 serverutils/server.py
 serverutils/serverlistenable.py
 serverutils/socketutils.py

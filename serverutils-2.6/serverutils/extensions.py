@@ -3,7 +3,7 @@ import os
 import sys
 from .protocols import HFE, HTTPDATA
 import importlib
-import gzip
+import gzip, shutil
 
 
 class Extension:
@@ -146,7 +146,7 @@ class PyHP(Extension):
 
 class HTTPProtocolSwitcher(Extension):
     def uponAddToServer(self,server):
-        server.getHook("http_handle").addTopFunction(self.handle)
+        server.getHook("http_handle").addEventualFunction(self.handle,0)
         self.switchhook=server.addHook("protocolswitcher_switch")
     def handle(self,incoming,outgoing):
         if incoming.type=="GET" and incoming.headers["Connection"]=="upgrade":
@@ -184,35 +184,36 @@ files. Stores the gzipped files in a cache.'''
         file=open(self.cachelocale+"md5caches","w")
         data=""
         for x,y in ncache.items():
-            data+=x+" : "+y+"\n"
+            data+=str(x)+" : "+str(y)+"\n"
         file.write(data)
         file.close()
     def openCache(self):
         file=open(self.cachelocale+"md5caches")
         data=file.read()
         file.close()
+        print(data)
         d=data.split("\n")[:-1] ## Use all but the last, unfilled, line.
+        print(d)
         returner={}
         for x in d:
-            ps=x.split(" = ")
+            ps=x.split(" : ")
+            print(ps)
             returner[ps[0]]=float(ps[1])
         return returner
     def handle(self,incoming,outgoing):
         ## Only do any of this if outgoing has a file send
         print("Beep")
-        if outgoing.filename and os.path.exists(incoming.location) and "gzip" in incoming.headers["Accept-Encoding"]:
+        if os.path.isfile(incoming.location) and outgoing.filename and "gzip" in incoming.headers["Accept-Encoding"]:
             print(incoming.location)
+            location=incoming.location.replace("/",".")
             if self.isCacheInvalid(incoming.location):
+                print("Invalid cache.")
                 self.validateCache(incoming.location)
                 file=open(incoming.location)
-                data=file.read() ## SimpleGzipper is NOT MEMORY SAFE. But none of this is.
+                gzipped=gzip.open(self.cachelocale+'"'+location+'.gz"',"wb")
+                gzipped.write(file.read().encode())
                 file.close()
-                gzipped=gzip.GzipFile('"'+self.cachelocale+incoming.location+'.gz"',"wb+")
-                output.write(data)
-                output.close()
-            outgoing.setFile('"'+self.cachelocale+incoming.location+'.gz"')
+                gzipped.close()
+            outgoing.setFile(self.cachelocale+'"'+location+'.gz"')
             outgoing.addHeader("Content-Encoding","gzip")
-        else:
-            server.getHook("httpfailure").call(incoming,outgoing,HFE.FILENOTFOUND)
-        print("Made it past the get request intercepter for SimpleGzipper")
         return True
