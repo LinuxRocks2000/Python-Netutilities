@@ -1,19 +1,6 @@
 from .socketutils import ServerSocket
 
 
-pork=print
-printtabs=""
-def addprinttabs(n):
-    global printtabs
-    printtabs+=n*"  "
-def removeprinttabs(n):
-    global printtabs
-    printtabs=printtabs[n*2:]
-def print(*args,**kwargs):
-    global printtabs
-    dawrgs=list(args)
-    dawrgs[0]=printtabs+dawrgs[0]
-    pork(*dawrgs,**kwargs)
 class Hook:
     def __init__(self,name,controller=None):
         self.name=name

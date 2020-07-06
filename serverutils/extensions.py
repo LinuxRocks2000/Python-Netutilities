@@ -85,6 +85,7 @@ class JustASimpleWebServerExtension(Extension):
     def topGET(self,incoming,outgoing): ## Copycatted from server.py/SimpleHTTPServer
         baselocale=os.path.basename(incoming.location)
         locale=incoming.location
+        print("And the location is: "+os.path.abspath(locale))
         if baselocale=="":
             if os.path.isfile(locale+self.index):
                 outgoing.setStatus(200)
@@ -169,18 +170,22 @@ files. Stores the gzipped files in a cache.'''
             p=open(cachelocale+"md5caches","w+")
             p.close()
         self.server.getHook("http_handleGET").addFunction(self.handle)
+        print("SimpleGzipper has been added!")
         return "SimpleGzipper"
     def isCacheInvalid(self,filename):
+        print("Checking SimpleGzipper cache...")
         data=self.openCache()
         crmtime=os.path.getmtime(filename)
         if (not filename in data) or (crmtime!=data[filename]):
             return True
         return False
     def validateCache(self,filename):
+        print("Validating SimpleGzipper cache...")
         d=self.openCache()
         d[filename]=str(os.path.getmtime(filename))
         self.writeCache(d)
     def writeCache(self,ncache):
+        print("Writing SimpleGzipper cache")
         file=open(self.cachelocale+"md5caches","w")
         data=""
         for x,y in ncache.items():
@@ -188,6 +193,7 @@ files. Stores the gzipped files in a cache.'''
         file.write(data)
         file.close()
     def openCache(self):
+        print("Opening SimpleGzipper cache")
         file=open(self.cachelocale+"md5caches")
         data=file.read()
         file.close()
@@ -202,16 +208,16 @@ files. Stores the gzipped files in a cache.'''
         return returner
     def handle(self,incoming,outgoing):
         ## Only do any of this if outgoing has a file send
-        print("Beep")
+        print("Handling, in SimpleGzipper")
         if os.path.isfile(incoming.location) and outgoing.filename and "gzip" in incoming.headers["Accept-Encoding"]:
-            print(incoming.location)
+            print("Made it past the first IfGate in SimpleGzipper/handle")
             location=incoming.location.replace("/",".")
             if self.isCacheInvalid(incoming.location):
-                print("Invalid cache.")
+                print("SimpleGzipper cache is invalid for "+location)
                 self.validateCache(incoming.location)
-                file=open(incoming.location)
+                file=open(incoming.location,"rb")
                 gzipped=gzip.open(self.cachelocale+'"'+location+'.gz"',"wb")
-                gzipped.write(file.read().encode())
+                shutil.copyfileobj(file,gzipped)
                 file.close()
                 gzipped.close()
             outgoing.setFile(self.cachelocale+'"'+location+'.gz"')
