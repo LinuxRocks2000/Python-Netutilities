@@ -121,15 +121,16 @@ class IncrediblySimpleWebSend(Extension):
         self.server.getHook("httprecv").addEventualFunction(self.httprecv)
         return "IS-Websend"
     def httprecv(self,incoming):
-        o=HTTPOutgoing(incoming)
-        if os.path.isfile(incoming.rqstdt["uri"]):
-            o.setFile(incoming.rqstdt["uri"])
-        else:
-            if self.config["404"][0]=="inline":
-                o.setContent(self.config["404"][1])
-            elif self.config["404"][0]=="file":
-                o.setFile(self.config["404"][1])
-        o.send()
+        if incoming.rqstdt["httpmethod"]=="GET":
+            o=HTTPOutgoing(incoming)
+            if os.path.isfile(incoming.rqstdt["uri"]):
+                o.setFile(incoming.rqstdt["uri"])
+            else:
+                if self.config["404"][0]=="inline":
+                    o.setContent(self.config["404"][1])
+                elif self.config["404"][0]=="file":
+                    o.setFile(self.config["404"][1])
+            o.send()
 
 
 class URISterilizer(Extension):
