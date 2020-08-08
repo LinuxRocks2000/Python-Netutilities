@@ -22,7 +22,9 @@ use except maybe creating your own HTTP based servers.'''
         self.getHook("init").addFunction(self.initialify)
     def initialify(self):
         self.getHook("http_handle").addEventualFunction(self.send)
+        print("Adding sendhook")
     def send(self,incoming,outgoing):
+        print("sent")
         outgoing.send() ## Assume that status and other information have already been set.
 
 

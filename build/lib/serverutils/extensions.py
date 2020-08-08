@@ -89,6 +89,7 @@ class JustASimpleWebServerExtension(Extension):
         if baselocale=="":
             if os.path.isfile(locale+self.index):
                 outgoing.setStatus(200)
+                print("Sending because baselocale is nothing, the location requets is: "+locale+self.index)
                 outgoing.setFile(locale+self.index)
             else:
                 self.server.getHook("httpfailure").call(incoming,outgoing,HFE.FILENOTFOUND) ## Build utilities should intercept this.
@@ -114,13 +115,16 @@ class JustASimpleWebServerExtension(Extension):
         if realpos[0]=="/":
             realpos=realpos[1:]
         realpos=self.sitedir+realpos
+        realpos=os.path.abspath(realpos)
+        if realpos[-1]!="/" and os.path.isdir(realpos):
+            realpos+="/"
         incoming.location=realpos
-        print("Successfully filtered the request location in JaSWSE")
+        print("Successfully filtered the request location in JaSWSE, location being: "+realpos+", incoming location being: "+incoming.location)
         return True ## Don't ever forget return in a top function.
 
 
 class PyHP(Extension):
-    def uponAddToServer(self,index="index"):
+    def uponAddToServer(self,index="index.py"):
         print("Added to server")
         self.index=index
         self.server.getHook("http_handle").addFunction(self.handle)
@@ -132,7 +136,8 @@ class PyHP(Extension):
                 locale=incoming.location[:-3]
             if os.path.exists(incoming.location+".py"):
                 locale=incoming.location
-            if incoming.location[-1]=="/" and os.path.exists(incoming.location+self.index+".py"):
+            print(incoming.location)
+            if incoming.location[-1]=="/" and os.path.exists(incoming.location+self.index):
                 locale=incoming.location+self.index
             if locale:
                 i=importlib.import_module(os.path.relpath(locale).replace("/","."))

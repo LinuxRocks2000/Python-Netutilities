@@ -80,6 +80,8 @@ as they add a nice padding.'''
         file=open(filename,"rb")
         self.send(file.read())
         file.close()
+    def sendbytes(self,data): ## Auxilary method.
+        self.send(data)
     def close(self):
         self.sckt.shutdown(1)
         self.sckt.close()
@@ -99,7 +101,7 @@ class ClientConnection:
         return self.socket.recv(rcv)
     def recvtext(self,rcv=Data.STDCHUNKSIZE):
         '''Recieve all data, and return it as a string'''
-        return self.recieve(rcv).decode()
+        return self.recvall(rcv).decode()
     def recvall(self,chunks=Data.STDCHUNKSIZE):
         '''Recieve all available data, and return it as a bytes object.'''
         data=self.socket.recvall(chunks)

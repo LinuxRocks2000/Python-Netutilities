@@ -1,19 +1,6 @@
 from .socketutils import ServerSocket
 
 
-pork=print
-printtabs=""
-def addprinttabs(n):
-    global printtabs
-    printtabs+=n*"  "
-def removeprinttabs(n):
-    global printtabs
-    printtabs=printtabs[n*2:]
-def print(*args,**kwargs):
-    global printtabs
-    dawrgs=list(args)
-    dawrgs[0]=printtabs+dawrgs[0]
-    pork(*dawrgs,**kwargs)
 class Hook:
     def __init__(self,name,controller=None):
         self.name=name
@@ -26,15 +13,28 @@ class Hook:
         if self.doesAnything(): ## Allow for a "default function" which will only run if nothing else is available. So far, no one has used new controller functions!
             continu=True
             for x in self.topfunctions:
-                if continu:
-                    continu=x(*args,**kwargs)
+                try:
+                    if continu:
+                        continu=x(*args,**kwargs)
+                except:
+                    print("A top function named "+x.__name__+" failed")
             if continu:
                 for x in self.functions:
-                    x(*args,**kwargs)
+                    try:
+                        x(*args,**kwargs)
+                    except:
+                        print("A normal function named "+x.__name__+" failed")
         elif self.default:
-            self.default(*args,**kwargs)
+            try:
+                self.default(*args,**kwargs)
+            except:
+                print("A default function failed.")
         for x in self.eventuals:
-            x(*args,**kwargs)
+            try:
+                x(*args,**kwargs)
+                print("An eventual function named "+x.__name__+" succeeded, and Yay!")
+            except:
+                print("An eventual function named "+x.__name__+" failed, however it was caught.")
     def call(self,*args,**kwargs):
         self.controller(*args,**kwargs)
     def addFunction(self,function):
@@ -57,7 +57,7 @@ class Hook:
         else:
             self.eventuals.insert(function,priority)
     def doesAnything(self):
-        if len(self.topfunctions)+len(self.functions)>0:
+        if len(self.topfunctions)+len(self.functions)+len(self.eventuals)>0:
             return True
         return False
 

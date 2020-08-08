@@ -13,15 +13,28 @@ class Hook:
         if self.doesAnything(): ## Allow for a "default function" which will only run if nothing else is available. So far, no one has used new controller functions!
             continu=True
             for x in self.topfunctions:
-                if continu:
-                    continu=x(*args,**kwargs)
+                try:
+                    if continu:
+                        continu=x(*args,**kwargs)
+                except:
+                    pass#print("A top function named "+x.__name__+" failed")
             if continu:
                 for x in self.functions:
-                    x(*args,**kwargs)
+                    try:
+                        x(*args,**kwargs)
+                    except Exception as e:
+                        pass#print("A normal function named "+x.__name__+" failed with exception "+str(e))
         elif self.default:
-            self.default(*args,**kwargs)
+            try:
+                self.default(*args,**kwargs)
+            except:
+                pass#print("A default function failed.")
         for x in self.eventuals:
-            x(*args,**kwargs)
+            try:
+                x(*args,**kwargs)
+                pass#print("An eventual function named "+x.__name__+" succeeded, and Yay!")
+            except:
+                pass#print("An eventual function named "+x.__name__+" failed, however it was caught.")
     def call(self,*args,**kwargs):
         self.controller(*args,**kwargs)
     def addFunction(self,function):
@@ -44,7 +57,7 @@ class Hook:
         else:
             self.eventuals.insert(function,priority)
     def doesAnything(self):
-        if len(self.topfunctions)+len(self.functions)>0:
+        if len(self.topfunctions)+len(self.functions)+len(self.eventuals)>0:
             return True
         return False
 
@@ -57,30 +70,36 @@ class TCPServer:
         self.port=port
         self.extensions={}
         self.functable={}
-        self.protocols={}
+        self.protocol=None
         self.hooks={}
         init=self.addHook('init')
-        init.addFunction(self.listen)
         main=self.addHook("mainloop")
-        main.addFunction(self.run)
-        main.addFunction(self.tasks)
-        handle=self.addHook("handle")
-        handle.addFunction(self.handle)
+        main.addFunction(self._run)
         self.inittasks(*args,**kwargs)
+        self.clients=[]
     def inittasks(self,*args,**kwargs):
         pass
-    def listen(self,lst=5):
-        self.server.listen(lst)
-    def tasks(self):
+    def connect(self,client):
+        pass
+    def run(self):
         pass
     def addExtension(self,extensionobject):
-        self.protocols[extensionobject.addToServer(self)]=extensionobject
+        self.extensions[extensionobject.addToServer(self)]=extensionobject
     def addProtocol(self,protocolObject):
-        self.protocols[protocolObject.addToServer(self)]=protocolObject
-    def run(self):
+        self.protocol=protocolObject
+        protocolObject.addToServer(self)
+    def _run(self):
         connection=self.server.get_connection()
-        data=connection.recvall()
-        if connection: self.getHook("handle").call(connection,data)
+        if connection:
+            if self.protocol:
+                self.protocol.connect(connection)
+            else:
+                self.connect(connection)
+                self.clients.append(connection)
+        if not self.protocol:
+            self.run()
+        else:
+            self.protocol.run()
     def getHook(self,hook):
         return self.hooks[hook]
     def addHook(self,hook):
@@ -89,12 +108,10 @@ class TCPServer:
         return h
     def delHook(self,hook):
         del self.hooks[hook]
-    def handle(self,connection,data):
-        pass
     def start(self,*args,**kwargs):
         self.getHook("init").call(*args,**kwargs)
-        while 1:
-            self.getHook("mainloop").call() ## Mainloop functions must not have args
+    def iterate(self):
+        self.getHook("mainloop").call() ## Mainloop functions must not have args
     def addFuncToTable(self,name,function):
         self.functable[name]=function
     def callFuncFromTable(self,name,*args,**kwargs):

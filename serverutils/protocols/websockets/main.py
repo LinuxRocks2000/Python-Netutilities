@@ -93,6 +93,7 @@ class WebSocketMessage:
         self.MASKING_KEY=             None
         self.PAYLOAD_DATA=            None
         self.PAYLOAD_DATA_CONT=       None
+        self.DECODED_PAYLOAD_DATA=    None
         if data:
             self._decode(data)
     def _decode(self,data):
@@ -106,8 +107,18 @@ class WebSocketMessage:
         self.PAYLOAD_LEN=bits.read(7)
         self.EXT_PAYLOAD_LEN=bits.getInteger(16)
         self.EXT_EXT_PAYLOAD_LEN=bits.getInteger(64)
-        self.MASKING_KEY=bits.getSections("s8 s8 s8")
-        self.PAYLOAD_DATA=bits.getAllCharacters(8)
+        self.MASKING_KEY=bits.read(32)
+        if self.PAYLOAD_LEN<126:
+            self.PAYLOAD_DATA=bits.read(self.PAYLOAD_LEN)
+        elif self.PAYLOAD_LEN==126:
+            self.PAYLOAD_DATA=bits.read(self.EXT_PAYLOAD_LEN)
+        elif self.PAYLOAD_LEN==127:
+            self.PAYLOAD_DATA=bits.read(self.EXT_EXT_PAYLOAD_LEN)
+        if not self.MASK:
+            self.DECODED_PAYLOAD_DATA=self.PAYLOAD_DATA
+        else:
+            for x,y in enumerate(self.PAYLOAD_DATA):
+                self.DECODED_PAYLOAD_DATA+=y[0] ^ self.MASKING_KEY[i%4][0]
 class WebSocketIncoming:
     def __init__(self,data):
         self.data=data

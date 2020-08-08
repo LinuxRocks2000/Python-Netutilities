@@ -1,7 +1,7 @@
 import json
 import os
 import sys
-from .protocols import HFE, HTTPDATA
+from .protocols import HFE, HTTPDATA, HTTPOutgoing
 import importlib
 import gzip, shutil
 
@@ -21,106 +21,8 @@ uponAddToServer MUST return the name of the extension, for later use obviously.'
         pass
 
 
-class VeryBasicSecurity(Extension):
-    '''Incredibly simple security measures for servers. Blocks GET and POST requests
-which attempt to access secured files. Pass in the filename of a JSON
-config file, and the default permission level. See source for more.'''
-    def inittasks(self,configfile='config.json',default=1): ## Default permissions is... Dun dun dun... READ!
-        self.fname=configfile
-        file=open(configfile)
-        self.data=json.load(file)
-        file.close()
-        print(self.data)
-        self.defaultPermissions=default
-    def uponAddToServer(self):
-        self.server.getHook("http_handleGET").addTopFunction(self.topGET,0)
-        self.server.getHook("http_handlePOST").addTopFunction(self.topPOST,0)
-    def topPOST(self,incoming,outgoing):
-        perms=self.getPermissions(incoming.location,incoming)
-        print("Intercepting a post request...")
-        if perms>=2:
-            print("Post request supplied")
-            return True ## Write access granted beep boop baap
-        elif perms<2 and perms>-1:
-            self.server.getHook("httpfailure").call(incoming,outgoing,HFE.PERMISSIONDENIED)
-            return False
-        else:
-            self.server.getHook("httpfailure").call(incoming,outgoing,HFE.FILENOTFOUND)
-            return False
-    def topGET(self,incoming,outgoing):
-        print("Intercepting a get request...")
-        perms=self.getPermissions(incoming.location,incoming)
-        if perms>=1:
-            return True ## Anyone can access this. User managers should step in for additional security.
-        elif perms==0:
-            self.server.getHook("httpfailure").call(incoming,outgoing,HFE.PERMISSIONDENIED)
-            return False
-        else:
-            self.server.getHook("httpfailure").call(incoming,outgoing,HFE.FILENOTFOUND)
-            return False
-    def getPermissions(self,url,incoming):
-        perms=self.defaultPermissions ## Follows the UNIX fashion, except more limited. One number, regulates public access ONLY. User managers should step in afterwards for user-only stuff.
-        ## Permission numbers can be either -1, 0, 1, 2, or 3. -1 means classified, so a 404, 0 means no perms, 1 means read, 2 means write, 3 means both. Post requests are write, obviously.
-        print(os.path.basename(url))
-        if os.path.basename(url) in self.data["public"]:
-            print("Using public perms")
-            perms=self.data["public"][url]
-        return perms
-
-
-class JustASimpleWebServerExtension(Extension):
-    '''An extension for a simple web server.'''
-    def inittasks(self,sitedir=".",index="index.html"):
-        self.sitedir=sitedir if sitedir[-1]=="/" else sitedir+"/" ## Sterilizer uses this, not me.
-        self.index=index
-    def uponAddToServer(self):
-        self.server.getHook("http_handleGET").addTopFunction(self.topGET,0) ## Not to make it a habit, but priority number 0 is kind of necessary for webserver extensions.
-        self.server.getHook("http_handle").addTopFunction(self.filter_reqloc,0)
-        self.server.getHook("httpfailure").setDefaultFunction(self.fail)
-        return "jaswse"
-    def fail(self,incoming,outgoing,event):
-        if event==HFE.FILENOTFOUND:
-            outgoing.setStatus(404)
-            outgoing.setContent("The file you does be lookin' for don't exist.")
-    def topGET(self,incoming,outgoing): ## Copycatted from server.py/SimpleHTTPServer
-        baselocale=os.path.basename(incoming.location)
-        locale=incoming.location
-        print("And the location is: "+os.path.abspath(locale))
-        if baselocale=="":
-            if os.path.isfile(locale+self.index):
-                outgoing.setStatus(200)
-                outgoing.setFile(locale+self.index)
-            else:
-                self.server.getHook("httpfailure").call(incoming,outgoing,HFE.FILENOTFOUND) ## Build utilities should intercept this.
-        else:
-            if os.path.isfile(locale):
-                outgoing.setStatus(200)
-                outgoing.setFile(locale)
-            elif os.path.isdir(locale) and os.path.exists(locale+"/"+self.index):
-                outgoing.setStatus(200)
-                outgoing.setFile(locale+"/"+self.index)
-            elif os.path.isfile(locale+".html"):
-                outgoing.setStatus(200)
-                outgoing.setFile(locale+".html")
-            else:
-                self.server.getHook("httpfailure").call(incoming,outgoing,HFE.FILENOTFOUND)
-                return False ## Don't continue if the HTTP failed
-        print("Made it out of the TopGet function in JaSWSE")
-        return True
-    def filter_reqloc(self,incoming,outgoing):
-        '''Sterilize the location of the request. Do not touch unless you know what your doing.'''
-        realpos=incoming.location
-        realpos=realpos.replace("/../","/") ## Make sure unsavory characters can't hack you out by sending get requests with ../ as the location
-        if realpos[0]=="/":
-            realpos=realpos[1:]
-        realpos=self.sitedir+realpos
-        incoming.location=realpos
-        print("Successfully filtered the request location in JaSWSE")
-        return True ## Don't ever forget return in a top function.
-
-
 class PyHP(Extension):
-    def uponAddToServer(self,index="index"):
+    def uponAddToServer(self,index="index.py"):
         print("Added to server")
         self.index=index
         self.server.getHook("http_handle").addFunction(self.handle)
@@ -132,7 +34,8 @@ class PyHP(Extension):
                 locale=incoming.location[:-3]
             if os.path.exists(incoming.location+".py"):
                 locale=incoming.location
-            if incoming.location[-1]=="/" and os.path.exists(incoming.location+self.index+".py"):
+            print(incoming.location)
+            if incoming.location[-1]=="/" and os.path.exists(incoming.location+self.index):
                 locale=incoming.location+self.index
             if locale:
                 i=importlib.import_module(os.path.relpath(locale).replace("/","."))
@@ -143,20 +46,6 @@ class PyHP(Extension):
                         outgoing.setContent(data)
         except Exception as e:
             print(e)
-
-
-class HTTPProtocolSwitcher(Extension):
-    def uponAddToServer(self,server):
-        server.getHook("http_handle").addEventualFunction(self.handle,0)
-        self.switchhook=server.addHook("protocolswitcher_switch")
-    def handle(self,incoming,outgoing):
-        if incoming.type=="GET" and incoming.headers["Connection"]=="upgrade":
-            self.switchhook.call(incoming.headers["Upgrade"],incoming,outgoing)
-            outgoing.setStatus(101)
-            outgoing.addHeader("Upgrade",incoming.headers["Upgrade"])
-            outgoing.addHeader("Connection","upgrade")
-            return False
-        return True
 
 
 class SimpleGzipper(Extension):
@@ -223,3 +112,38 @@ files. Stores the gzipped files in a cache.'''
             outgoing.setFile(self.cachelocale+'"'+location+'.gz"')
             outgoing.addHeader("Content-Encoding","gzip")
         return True
+
+
+class IncrediblySimpleWebSend(Extension):
+    def inittasks(self,config={"404":["inline","Hello, World!"],"sitedir":"pages"}):
+        self.config=config
+    def uponAddToServer(self): ## Compatible with Protocol_HTTP
+        self.server.getHook("httprecv").addEventualFunction(self.httprecv)
+        return "IS-Websend"
+    def httprecv(self,incoming):
+        o=HTTPOutgoing(incoming)
+        if os.path.isfile(incoming.rqstdt["uri"]):
+            o.setFile(incoming.rqstdt["uri"])
+        else:
+            if self.config["404"][0]=="inline":
+                o.setContent(self.config["404"][1])
+            elif self.config["404"][0]=="file":
+                o.setFile(self.config["404"][1])
+        o.send()
+
+
+class URISterilizer(Extension):
+    def inittasks(self,config={"relativepaths":True,"noparentdir":True,"primeforwebsend":True}):
+        self.config=config
+    def uponAddToServer(self):
+        self.server.getHook("httprecv").addFunction(self.httprecv)
+        return "URISterilizer"
+    def httprecv(self,incoming):
+        uri=incoming.rqstdt["uri"]
+        if self.config["relativepaths"] and uri[0]=="/": uri=uri[1:]
+        if self.config["noparentdir"] and "../" in uri: uri.replace("../","")
+        if self.config["primeforwebsend"]: ## Designed for compatibility with the WebSend family of HTTP server senders
+            if "IS-Websend": ## Incredibly Simple WebSend
+                websconfig=self.server.extensions["IS-Websend"].config
+                uri=websconfig["sitedir"]+("/" if not websconfig["sitedir"][-1]=="/" else "")+uri
+        incoming.rqstdt["uri"]=uri
