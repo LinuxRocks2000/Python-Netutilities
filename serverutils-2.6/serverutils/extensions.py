@@ -115,8 +115,12 @@ files. Stores the gzipped files in a cache.'''
 
 
 class IncrediblySimpleWebSend(Extension):
-    def inittasks(self,config={"404":["inline","Hello, World!"],"sitedir":"pages"}):
-        self.config=config
+    def inittasks(self,config=None):
+        self.config={
+            "404":["inline","404 not found. For better 404 messages, add a config dictionary to your IncrediblySimpleWebSend object and set the 404 to a list like this: ['inline','Your inline 404 here'], or this: ['file','your 404 file name here']"],
+            "sitedir":"pages",
+            "index":"index.html"}
+        self.config.update(config)
     def uponAddToServer(self): ## Compatible with Protocol_HTTP
         self.server.getHook("httprecv").addEventualFunction(self.httprecv)
         return "IS-Websend"
@@ -134,17 +138,25 @@ class IncrediblySimpleWebSend(Extension):
 
 
 class URISterilizer(Extension):
-    def inittasks(self,config={"relativepaths":True,"noparentdir":True,"primeforwebsend":True}):
-        self.config=config
+    def inittasks(self,config={}):
+        self.config={"relativepaths":True,"noparentdir":True,"primeforwebsend":True,"useindexindirectory":True,"completehtmlfileextension":True}
+        self.config.update(config)
     def uponAddToServer(self):
         self.server.getHook("httprecv").addFunction(self.httprecv)
         return "URISterilizer"
     def httprecv(self,incoming):
         uri=incoming.rqstdt["uri"]
-        if self.config["relativepaths"] and uri[0]=="/": uri=uri[1:]
-        if self.config["noparentdir"] and "../" in uri: uri.replace("../","")
-        if self.config["primeforwebsend"]: ## Designed for compatibility with the WebSend family of HTTP server senders
-            if "IS-Websend": ## Incredibly Simple WebSend
+        print(uri)
+        if self.config["relativepaths"]==True and uri[0]=="/": uri=uri[1:]
+        if self.config["noparentdir"]==True and "../" in uri: uri.replace("../","")
+        if self.config["primeforwebsend"]==True: ## Designed for compatibility with the WebSend family of HTTP server senders
+            print(self.server.extensions)
+            if "IS-Websend" in self.server.extensions: ## Incredibly Simple WebSend
                 websconfig=self.server.extensions["IS-Websend"].config
                 uri=websconfig["sitedir"]+("/" if not websconfig["sitedir"][-1]=="/" else "")+uri
+                print(uri+("/" if uri[-1]!="/" else "")+websconfig["index"])
+                if self.config["useindexindirectory"]==True and os.path.isfile(uri+("/" if not uri[-1]=="/" else "")+websconfig["index"]):
+                    uri+=("/" if not uri[-1]=="/" else "")+websconfig["index"]
+                if self.config["completehtmlfileextension"]==True and os.path.isfile(uri+".html"):
+                    uri+=".html"
         incoming.rqstdt["uri"]=uri

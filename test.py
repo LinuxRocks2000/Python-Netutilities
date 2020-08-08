@@ -1,3 +1,6 @@
+import os
+os.chdir("/home/awesome")
+
 import serverutils
 import traceback
 
@@ -40,3 +43,4 @@ websconfig={"404":["inline","404 you are an idiot to think that this was found."
 s.addExtension(serverutils.IncrediblySimpleWebSend(config=websconfig))
 
 s.start()
+while 1: s.iterate()

@@ -20,7 +20,6 @@ class Protocol_HTTP(Protocol):
     def connect(self,connection):
         self.clients[self.clnum]=connection
         self.clnum+=1
-        print("What a funny little whale.")
     def recieve(self,incoming):
         if self.httprecv.doesAnything():
             self.httprecv.call(incoming)

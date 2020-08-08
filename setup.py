@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'serverutils',
   packages = ['serverutils'],
-  version = '4.0',
+  version = '4.1.0', ## <Major_release>.<minor_release>.<fix_number>
   description = 'A python library for webserver development with a simple API',
   author = 'Noman',
   author_email = 'plupy44@gmail.com',

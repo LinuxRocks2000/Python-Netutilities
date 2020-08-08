@@ -1,6 +1,5 @@
 from .serverlistenable import TCPServer
 from .protocols import Protocol_HTTP, HTTPOutgoing, HTTPDATA, HFE
-from .extensions import JustASimpleWebServerExtension
 import os
 
 
