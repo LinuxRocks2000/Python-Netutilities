@@ -34,7 +34,7 @@ class Protocol_HTTP(Protocol):
 
 class HTTPDATA: ## Static constants for HTTP stuff.
     methods=["GET","POST","HEAD","PUT","DELETE","CONNECT","OPTIONS","TRACE","PATCH"]
-    statuspairs={404:"Not Found",400:"Bad Request",500:"Internal Server Error",200:"OK",101:"Switching Protocols",301:"Moved Permantently",401:"Unauthorized",403:"Forbidden",503:"Service Unavailable"}
+    statuspairs={404:"Not Found",400:"Bad Request",500:"Internal Server Error",200:"OK",101:"Switching Protocols",301:"Moved Permanently",401:"Unauthorized",403:"Forbidden",503:"Service Unavailable"}
 
 
 class HTTPIncoming: ## A "reader" for http requests.
@@ -43,7 +43,9 @@ class HTTPIncoming: ## A "reader" for http requests.
             "cookies":{},
             "headers":{}
         } ## Data on the request
-        rspnsdt={} ## Data on what will be the response
+        rspnsdt={
+            "headers":{}
+        } ## Data on what will be the response
         continuo=False
         stage=0
         self.socket=socket
@@ -202,11 +204,11 @@ class HTTPIncoming: ## A "reader" for http requests.
 
 class HTTPOutgoing: ## Write counterpart of HTTPIncoming.
     def __init__(self,incoming,status=None,preserveConnection=False):
-        self.headers={}
+        self.headers=incoming.rspnsdt["headers"]
         self.http=incoming.http
         self.version=incoming.rqstdt["version"]
         self.filename=None
-        self.content=None
+        self.content=(None if not "content" in incoming.rspnsdt else incoming.rspnsdt["content"])
         self.status=200
         self.incoming=incoming ## Again, simply for further implementation.
         self.connection=incoming.socket
@@ -224,7 +226,7 @@ class HTTPOutgoing: ## Write counterpart of HTTPIncoming.
     def send(self):
         if self.content:
             self.headers["Content-Length"]=len(self.content)
-        if self.filename:
+        elif self.filename:
             self.headers["Content-Length"]=os.path.getsize(self.filename)
         data=("HTTP/"+self.version+" "+str(self.status)+" "+HTTPDATA.statuspairs[self.status]+"\r\n").encode()
         for x,y in self.headers.items():
@@ -234,7 +236,7 @@ class HTTPOutgoing: ## Write counterpart of HTTPIncoming.
                 data+=("Set-Cookie: "+x+"="+y+"\r\n").encode()
         data+="\r\n".encode()
         self.connection.sendbytes(data)
-        if self.filename:
-            self.connection.sendfile(self.filename)
-        elif self.content:
+        if self.content:
             self.connection.sendtext(self.content)
+        elif self.filename:
+            self.connection.sendfile(self.filename)
